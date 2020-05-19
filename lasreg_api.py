@@ -23,41 +23,6 @@ def after_request(response):
     return response
 
 
-@app.route("/bomen")
-def get_boom():
-    query = """
-select row_to_json(fc)
-from (
-    select
-        'FeatureCollection' as "type",
-        COALESCE(array_to_json(array_agg(f)), '[]'::json) as "features"
-    from (
-        select
-            'Feature' as "type",
-            ST_AsGeoJSON(ST_Transform(geom, 4326), 6) :: json as "geometry",
-            (
-                select json_strip_nulls(row_to_json(t))
-                from (
-                    select tree_id, height, elementid, elementtype, aantal_bomen, avg_height
-                ) t
-            ) as "properties"
-        FROM achterhoek.bomen a
-        WHERE ST_WITHIN(geom, ST_MakeEnvelope(241719, 437008, 243324, 437826, 28992))
-    ) as f
-) as fc;
-    """
-    connection = psycopg2.connect(user = "danielm",
-                                  password = "",
-                                  host = "localhost",
-                                  port = "5432",
-                                  database = "Lasreg")
-    cursor = connection.cursor()
-    cursor.execute(query)
-    result = cursor.fetchone()[0]
-    connection.close()
-    return jsonify(result)
-
-
 @app.route("/bomen_mvt/<z>/<x>/<y>")
 def get_boom_tiles(z, x, y):
     query = """
@@ -72,7 +37,7 @@ def get_boom_tiles(z, x, y):
                          256,
                          false
                  ) mvt_geom
-                 FROM achterhoek.bomen  
+                 FROM lasreg_api.bomen  
                  WHERE geom_3857 && TileBBox(%(z)s, %(x)s, %(y)s)
                  AND ST_Intersects(geom_3857, TileBBox(%(z)s, %(x)s, %(y)s))
          ) q;
@@ -116,7 +81,7 @@ from (
                     select objectid as elementid, 'Poel' as elementtype, ST_AREA(shape) as area
                 ) t
             ) as "properties"
-        FROM achterhoek.anlb_hout_water_zone_2
+        FROM lasreg_api.anlb_hout_water_zone_2
         WHERE left(pakket_omschrijving, 4) = 'Poel'
     ) as f
 ) as fc;
@@ -150,7 +115,7 @@ from (
                     select objectid as elementid, 'Heg' as elementtype, 1.5 as height, shape_length as length, shape_area as area
                 ) t
             ) as "properties"
-        FROM achterhoek.anlb_hout_water_zone_2
+        FROM lasreg_api.anlb_hout_water_zone_2
         WHERE split_part(pakket_omschrijving, ':', 1) = 'Knip- en scheerheg'
         OR split_part(pakket_omschrijving, ';', 1) = 'Struweelhaag'
         OR pakket_omschrijving = 'Struweelrand'
