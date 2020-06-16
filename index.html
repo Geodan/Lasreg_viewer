@@ -6,49 +6,41 @@
     <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
     <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.4.0/mapbox-gl.js'></script>
     <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.4.0/mapbox-gl.css' rel='stylesheet' />
+    <script src='map.js'></script>
+    <link href='map.css' rel='stylesheet' />
+    <script src='nav.js'></script>
+    <link href='nav.css' rel='stylesheet' />
     <style>
         body { margin:0; padding:0; }
         #map { position:absolute; top:0; bottom:0; width:100%; }
     </style>
 </head>
-<body>
-
-    <style>
-		
-		#menu {
-			position: absolute;
-			background: #fff;
-			padding: 10px;
-			font-family: 'Open Sans', sans-serif;
-		}
- 
-        .legend {
-			background-color: #fff;
-			border-radius: 3px;
-			bottom: 30px;
-			box-shadow: 0 1px 2px rgba(0,0,0,0.10);
-			font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
-			padding: 10px;
-			position: absolute;
-			right: 10px;
-			z-index: 1;
-        }
-         
-        .legend h4 {
-			margin: 0 0 10px;
-        }
-         
-        .legend div span {
-			border-radius: 50%;
-			display: inline-block;
-			height: 10px;
-			margin-right: 5px;
-			width: 10px;
-        }
-         
-    </style>
+<body onload='initmap()'>
 
 <div id='map'></div>
+
+<div id="mySidenav" class="sidenav">
+  <span class="navbtn closebtn" onclick="closeNav()">&times;</span>
+  <div id='historyH'><h2>Geschiedenis van:</h2></div>
+  <div id="navbox" class="navbox"></div>
+  <form>
+    <label for="type_opm">Betreft:</label>
+    <select name="type_opm" id="type_opm" style="margin: 8px 0;">
+        <option value="opmerking">opmerking</option>
+        <option value="beschrijving">beschrijving</option>
+        <option value="beheer nodig">beheer nodig</option>
+        <option value="beheer gedaan">beheer gedaan</option>
+        <option value="element verdwenen">element verdwenen</option>
+    </select><br>
+    <label for="naam">Naam:</label>
+    <input type="text" id="naam" name="naam" value="" style="margin: 8px 0;"><br>
+    <label for="opmerking">Opmerking:</label><br>
+    <textarea id="opmerking" name=opmerking" rows="3" cols="30" style="margin: 8px 0;"></textarea>
+    <button type="button" onclick="maak_opmerking()">Plaats opmerking</button>
+  </form> 
+  
+</div>
+
 <div id="menu">
 	<input id="positron" type="radio" name="rtoggle" value="basic" checked="checked" />
 	<label for="basic">basic</label>
@@ -67,123 +59,6 @@
     <div><span style='background-color: #43FF33'></span>Heggen</div>
     <div><span style='background-color: #0CFDFE'></span>Poelen</div>
  </div>
-
-<script>
-var map = new mapboxgl.Map({
-    container: 'map',
-    style: 'https://api.maptiler.com/maps/positron/style.json?key=DnTMUKM1IaBfW6AjV7bn',
-    zoom: 15.5,
-	pitch: 60, // pitch in degrees
-	bearing: -60, // bearing in degrees
-    center: [6.661585209069443, 51.91879773273479]
-});
-
-map.on('load', function () {
-	map.addControl(new mapboxgl.NavigationControl());
-
-    var LegendEl = document.getElementById('legend');
-    LegendEl.style.display = 'block';
-});
-
-map.on('styledata', function () {
-	
-	map.addSource('poelen', {
-      type: 'geojson',
-      data: 'http://leda.geodan.nl:1500/poelen'
-    });
-    map.addLayer({
-        "id": "poelen",
-        "type": "fill",
-        "source": "poelen",
-        'paint': {
-            'fill-color': '#0CFDFE'
-        }
-	});
-	
-    map.addSource('bomen', {
-	  'type': 'vector',
-	  'tiles': [
-		'http://leda.geodan.nl:1500/bomen_mvt/{z}/{x}/{y}'
-	  ],
-	  'minzoom': 8,
-	  'maxzoom': 14
-    });
-    map.addLayer({
-        "id": "bomen",
-        "type": "fill-extrusion",
-        "source": "bomen",
-		'source-layer': 'bomen',
-        'paint': {
-            'fill-extrusion-color': [
-				'match',
-                ['get', 'elementtype'],
-                'Solitaire boom', '#42f5b6',
-                'Bomengroep', '#0B5345',
-                'Bomenrij', '#F4D03F',
-                'Houtwal', '#6E2C00',
-                /* other */ '#ccc'
-            ],
-            'fill-extrusion-opacity': 0.6,
-			"fill-extrusion-height": ['get', "height"]
-		}
-	});
-
-    map.addSource('heggen', {
-      type: 'geojson',
-      data: 'http://leda.geodan.nl:1500/heggen'
-    });
-    map.addLayer({
-        "id": "heggen",
-        "type": "fill-extrusion",
-        "source": "heggen",
-        'paint': {
-            'fill-extrusion-color': '#43FF33',
-            'fill-extrusion-opacity': 0.6,
-            'fill-extrusion-height': ['get', 'height']
-        }
-	});
-});
-
-map.on('click', 'bomen', function (e) {
-    var prop = e.features[0].properties;
-	prop.height = Math.round(prop.height * 10) / 10;
-	prop.avg_height = Math.round(prop.avg_height * 10) / 10;
-    var htmlstring = '<h2>' + prop.elementtype + '</h2><p>Element id: ' + prop.elementid + 
-		'<br>Aantal bomen: ' + prop.aantal_bomen + '<br>Gemiddelde hoogte: ' + prop.avg_height + 
-		' meter</p><p><h3>Boomgegevens:</h3> Boomregister id: ' + prop.tree_id + 
-		'<br>Hoogte: ' + prop.height + ' meter</p>';
-    new mapboxgl.Popup().setLngLat(e.lngLat).setHTML(htmlstring).addTo(map);
-});
-map.on('click', 'heggen', function (e) {
-    var prop = e.features[0].properties;
-	prop.height = Math.round(prop.height * 10) / 10;
-	prop.length = Math.round(prop.length * 10) / 10;
-	prop.area = Math.round(prop.area * 10) / 10;
-    var htmlstring = '<h2>' + prop.elementtype + '</h2><p>Element id: ' + prop.elementid + 
-		'<br>Hoogte: ' + prop.height + ' meter<br>Lengte: ' + prop.length + 
-		' meter<br>Oppervlakte: ' + prop.area + ' m2</p>';
-    new mapboxgl.Popup().setLngLat(e.lngLat).setHTML(htmlstring).addTo(map);
-});
-map.on('click', 'poelen', function (e) {
-    var prop = e.features[0].properties;
-	prop.area = Math.round(prop.area * 10) / 10;
-    var htmlstring = '<h2>' + prop.elementtype + '</h2><p>Element id: ' + prop.elementid + 
-		'<br>Oppervlakte: ' + prop.area + ' m2</p>';
-    new mapboxgl.Popup().setLngLat(e.lngLat).setHTML(htmlstring).addTo(map);
-});
-
-
-var layerList = document.getElementById('menu');
-var inputs = layerList.getElementsByTagName('input');
- 
-function switchLayer(layer) {
-	map.setStyle('https://api.maptiler.com/maps/' + layer.target.id + '/style.json?key=DnTMUKM1IaBfW6AjV7bn');
-}
- 
-for (var i = 0; i < inputs.length; i++) {
-	inputs[i].onclick = switchLayer;
-}
-</script>
 
 </body>
 </html>

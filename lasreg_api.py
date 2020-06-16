@@ -7,6 +7,8 @@ Created on Thu Sep 26 18:06:12 2019
 
 import os
 import time
+from datetime import datetime
+from uuid import uuid4
 
 import psycopg2
 from psycopg2 import sql
@@ -29,20 +31,20 @@ def get_boom_tiles(z, x, y):
     SELECT ST_AsMVT(q, 'bomen', 4096, 'mvt_geom')
          FROM (
                  SELECT
-                 tree_id, height, elementid, elementtype, aantal_bomen, avg_height,
-                 ST_AsMVTGeom(
-                         geom_3857,
-                         TileBBox(%(z)s, %(x)s, %(y)s),
-                         4096,
-                         256,
-                         false
-                 ) mvt_geom
+                    tree_id, hoogte, elementid, elementtype, aantalbomen, avg_height,
+                    ST_AsMVTGeom(
+                            geom_3857,
+                            TileBBox(%(z)s, %(x)s, %(y)s),
+                            4096,
+                            256,
+                            false
+                    ) mvt_geom
                  FROM lasreg_api.bomen  
                  WHERE geom_3857 && TileBBox(%(z)s, %(x)s, %(y)s)
                  AND ST_Intersects(geom_3857, TileBBox(%(z)s, %(x)s, %(y)s))
          ) q;
     """
-    CACHE_PATH = './LasReg_mvt_cache'
+    CACHE_PATH = './LasReg_mvt_cache_bomen'
     cachefile = "{}/{}/{}/{}".format(CACHE_PATH, z, x, y)
     if os.path.exists(cachefile) and time.time() - os.path.getmtime(cachefile) < 300:
         with open(cachefile, "rb") as f:
@@ -62,29 +64,55 @@ def get_boom_tiles(z, x, y):
     response.headers['Access-Control-Allow-Origin'] = "*"
     return response
 
+@app.route("/landschapselementen_mvt/<z>/<x>/<y>")
+def get_LSE_tiles(z, x, y):
+    query = """
+    SELECT ST_AsMVT(q, 'landschapselementen', 4096, 'mvt_geom')
+         FROM (
+                 SELECT
+                    "identificatie.lokaalID" as elementid, typeLandschapselement as elementtype, 
+                    aantalBomen, hoogte, onderhoudsStatus, inOnderzoek, bronhouder,
+                    ST_AsMVTGeom(
+                            geometrie2d,
+                            TileBBox(%(z)s, %(x)s, %(y)s),
+                            4096,
+                            256,
+                            false
+                    ) mvt_geom
+                 FROM lasreg_api.landschapselementen  
+                 WHERE geometrie2d && TileBBox(%(z)s, %(x)s, %(y)s)
+                 AND ST_Intersects(geometrie2d, TileBBox(%(z)s, %(x)s, %(y)s))
+         ) q;
+    """
+    CACHE_PATH = './LasReg_mvt_cache_elementen'
+    cachefile = "{}/{}/{}/{}".format(CACHE_PATH, z, x, y)
+    if os.path.exists(cachefile) and time.time() - os.path.getmtime(cachefile) < 300:
+        with open(cachefile, "rb") as f:
+            response = app.make_response(f.read())
+    else:
+        connection = psycopg2.connect(user = "danielm", password = "", host = "localhost", port = "5432", database = "Lasreg")
+        cursor = connection.cursor()
+        cursor.execute(query, {'z': z, 'x': x, 'y': y})
+        result = cursor.fetchone()[0]
+        connection.close()
+        if not os.path.exists("{}/{}/{}".format(CACHE_PATH, z, x)):
+            os.makedirs("{}/{}/{}".format(CACHE_PATH, z, x))
+        with open(cachefile, "wb") as f:
+            f.write(bytes(result))
+        response = app.make_response(bytes(result))
+    response.headers['Content-Type'] = 'application/x-protobuf'
+    response.headers['Access-Control-Allow-Origin'] = "*"
+    return response
 
-@app.route("/poelen")
-def get_poel():
+@app.route("/geschiedenis/<id>")
+def get_geschiedenis(id):
     query = """
-select row_to_json(fc)
-from (
-    select
-        'FeatureCollection' as "type",
-        COALESCE(array_to_json(array_agg(f)), '[]'::json) as "features"
-    from (
-        select
-            'Feature' as "type",
-            ST_AsGeoJSON(ST_Transform(shape, 4326), 6) :: json as "geometry",
-            (
-                select json_strip_nulls(row_to_json(t))
-                from (
-                    select objectid as elementid, 'Poel' as elementtype, ST_AREA(shape) as area
-                ) t
-            ) as "properties"
-        FROM lasreg_api.anlb_hout_water_zone_2
-        WHERE left(pakket_omschrijving, 4) = 'Poel'
-    ) as f
-) as fc;
+SELECT json_agg(ev) FROM (
+SELECT *, to_char(datetime, 'DD-MM-YYYY HH24:MI') as tijd
+FROM lasreg_api.events
+WHERE landschapselementid = %s
+ORDER BY datetime
+	) as ev;
     """
     connection = psycopg2.connect(user = "danielm",
                                   password = "",
@@ -92,46 +120,25 @@ from (
                                   port = "5432",
                                   database = "Lasreg")
     cursor = connection.cursor()
-    cursor.execute(query)
+    cursor.execute(query, (id,))
     result = cursor.fetchone()[0]
     connection.close()
     return jsonify(result)
-    
-@app.route("/heggen")
-def get_heg():
-    query = """
-select row_to_json(fc)
-from (
-    select
-        'FeatureCollection' as "type",
-        COALESCE(array_to_json(array_agg(f)), '[]'::json) as "features"
-    from (
-        select
-            'Feature' as "type",
-            ST_AsGeoJSON(ST_Transform(shape, 4326), 6) :: json as "geometry",
-            (
-                select json_strip_nulls(row_to_json(t))
-                from (
-                    select objectid as elementid, 'Heg' as elementtype, 1.5 as height, shape_length as length, shape_area as area
-                ) t
-            ) as "properties"
-        FROM lasreg_api.anlb_hout_water_zone_2
-        WHERE split_part(pakket_omschrijving, ':', 1) = 'Knip- en scheerheg'
-        OR split_part(pakket_omschrijving, ';', 1) = 'Struweelhaag'
-        OR pakket_omschrijving = 'Struweelrand'
-    ) as f
-) as fc;
-    """
+
+
+@app.route("/opmerking/<id>/<opm_type>/<author>/<text>")
+def add_opmerking(id, opm_type, author, text):
     connection = psycopg2.connect(user = "danielm",
                                   password = "",
                                   host = "localhost",
                                   port = "5432",
                                   database = "Lasreg")
     cursor = connection.cursor()
-    cursor.execute(query)
-    result = cursor.fetchone()[0]
+    cursor.execute("INSERT INTO lasreg_api.events VALUES (%s, %s, %s, %s, false, %s, %s);", 
+                    (str(uuid4()), id, opm_type, author, datetime.now(), text))
+    connection.commit()
     connection.close()
-    return jsonify(result)
+    return get_geschiedenis(id)
 
 
 if __name__ == "__main__":

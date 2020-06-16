@@ -1,0 +1,37 @@
+.sidenav {
+  height: 100%;
+  width: 0;
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  background-color: #fff;
+  overflow-x: hidden;
+  transition: 0.5s;
+  padding-top: 10px;
+  border-right: 0px solid;
+  box-shadow: 2px 5px 8px #888888;
+  padding-left: 0px;
+}
+
+.navbtn {
+  cursor:pointer;
+}
+
+.closebtn {
+  position: absolute;
+  top: 5;
+  right: 10px;
+  font-size: 25px;
+}
+
+.navbox {
+  height: 50%;
+  width:285px;
+  border:0px solid #ccc;
+  font:14px/20px Georgia, Garamond, Serif;
+  overflow:auto;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
