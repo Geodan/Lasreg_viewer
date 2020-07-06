@@ -33,15 +33,15 @@ def get_boom_tiles(z, x, y):
                  SELECT
                     tree_id, hoogte, elementid, elementtype, aantalbomen, avg_height,
                     ST_AsMVTGeom(
-                            geom_3857,
+                            geom,
                             TileBBox(%(z)s, %(x)s, %(y)s),
                             4096,
                             256,
                             false
                     ) mvt_geom
                  FROM lasreg_api.bomen  
-                 WHERE geom_3857 && TileBBox(%(z)s, %(x)s, %(y)s)
-                 AND ST_Intersects(geom_3857, TileBBox(%(z)s, %(x)s, %(y)s))
+                 WHERE geom && TileBBox(%(z)s, %(x)s, %(y)s)
+                 AND ST_Intersects(geom, TileBBox(%(z)s, %(x)s, %(y)s))
          ) q;
     """
     CACHE_PATH = './LasReg_mvt_cache_bomen'
@@ -50,7 +50,7 @@ def get_boom_tiles(z, x, y):
         with open(cachefile, "rb") as f:
             response = app.make_response(f.read())
     else:
-        connection = psycopg2.connect(user = "danielm", password = "", host = "localhost", port = "5432", database = "Lasreg")
+        connection = psycopg2.connect(user = "danielm", password = "", host = "mimas.geodan.nl", port = "5432", database = "research")
         cursor = connection.cursor()
         cursor.execute(query, {'z': z, 'x': x, 'y': y})
         result = cursor.fetchone()[0]
@@ -90,7 +90,7 @@ def get_LSE_tiles(z, x, y):
         with open(cachefile, "rb") as f:
             response = app.make_response(f.read())
     else:
-        connection = psycopg2.connect(user = "danielm", password = "", host = "localhost", port = "5432", database = "Lasreg")
+        connection = psycopg2.connect(user = "danielm", password = "", host = "mimas.geodan.nl", port = "5432", database = "research")
         cursor = connection.cursor()
         cursor.execute(query, {'z': z, 'x': x, 'y': y})
         result = cursor.fetchone()[0]
@@ -114,11 +114,7 @@ WHERE landschapselementid = %s
 ORDER BY datetime
 	) as ev;
     """
-    connection = psycopg2.connect(user = "danielm",
-                                  password = "",
-                                  host = "localhost",
-                                  port = "5432",
-                                  database = "Lasreg")
+    connection = psycopg2.connect(user = "danielm", password = "", host = "mimas.geodan.nl", port = "5432", database = "research") 
     cursor = connection.cursor()
     cursor.execute(query, (id,))
     result = cursor.fetchone()[0]
@@ -128,11 +124,7 @@ ORDER BY datetime
 
 @app.route("/opmerking/<id>/<opm_type>/<author>/<text>")
 def add_opmerking(id, opm_type, author, text):
-    connection = psycopg2.connect(user = "danielm",
-                                  password = "",
-                                  host = "localhost",
-                                  port = "5432",
-                                  database = "Lasreg")
+    connection = psycopg2.connect(user = "danielm", password = "", host = "mimas.geodan.nl", port = "5432", database = "research")
     cursor = connection.cursor()
     cursor.execute("INSERT INTO lasreg_api.events VALUES (%s, %s, %s, %s, false, %s, %s);", 
                     (str(uuid4()), id, opm_type, author, datetime.now(), text))
@@ -142,7 +134,7 @@ def add_opmerking(id, opm_type, author, text):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=1500)
+    app.run(host="127.0.0.1", port=1500)
 
 
 

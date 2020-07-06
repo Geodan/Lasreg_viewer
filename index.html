@@ -36,18 +36,22 @@
     <input type="text" id="naam" name="naam" value="" style="margin: 8px 0;"><br>
     <label for="opmerking">Opmerking:</label><br>
     <textarea id="opmerking" name=opmerking" rows="3" cols="30" style="margin: 8px 0;"></textarea>
-    <button type="button" onclick="maak_opmerking()">Plaats opmerking</button>
+    <button type="button" onclick="maak_opmerking()">Plaatsen</button>
   </form> 
   
 </div>
 
 <div id="menu">
-	<input id="positron" type="radio" name="rtoggle" value="basic" checked="checked" />
-	<label for="basic">basic</label>
-	<input id="streets" type="radio" name="rtoggle" value="streets" />
-	<label for="streets">streets</label>
+	<input id="streets" type="radio" name="rtoggle" value="streets" checked="checked" />
+	<label for="streets">kaart</label>
 	<input id="hybrid" type="radio" name="rtoggle" value="satellite" />
-	<label for="satellite">satellite</label>
+	<label for="satellite">satelliet</label>
+</div>
+
+<div id="menu2">
+  <H4>Vlieg naar:</H4>
+  <div><button type="button" style="width: 120px; margin: 5px;" onclick="otherLocation('Friese wouden')">Friese wouden</button></div>
+  <div><button type="button" style="width: 120px; margin: 5px;" onclick="otherLocation('Achterhoek')">Achterhoek</button></div>
 </div>
 
 <div id='legend' class='legend'>
@@ -62,3 +66,4 @@
 
 </body>
 </html>
+

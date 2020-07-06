@@ -5,6 +5,14 @@
   padding: 10px;
   font-family: 'Open Sans', sans-serif;
 }
+
+#menu2 {
+	position: absolute;
+	background: #fff;
+	padding: 10px;
+	font-family: 'Open Sans', sans-serif;
+	bottom: 10px;
+}
  
 .legend {
 	background-color: #fff;

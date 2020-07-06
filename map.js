@@ -5,11 +5,11 @@ function initmap(){
 
 map = new mapboxgl.Map({
     container: 'map',
-    style: 'https://api.maptiler.com/maps/positron/style.json?key=DnTMUKM1IaBfW6AjV7bn',
+    style: 'https://api.maptiler.com/maps/streets/style.json?key=DnTMUKM1IaBfW6AjV7bn',
     zoom: 15.5,
 	pitch: 60, // pitch in degrees
 	bearing: -60, // bearing in degrees
-    center: [6.661585209069443, 51.91879773273479]
+    center: [5.998242, 53.212298] //[6.661585209069443, 51.91879773273479]
 });
 
 map.on('load', function () {
@@ -24,7 +24,7 @@ map.on('styledata', function () {
     map.addSource('bomen', {
         'type': 'vector',
         'tiles': [
-          'http://leda.geodan.nl:1500/bomen_mvt/{z}/{x}/{y}'
+          'https://saturnus.geodan.nl/lasreg/bomen_mvt/{z}/{x}/{y}'
         ],
         'minzoom': 8,
         'maxzoom': 14
@@ -45,7 +45,7 @@ map.on('styledata', function () {
                   /* other */ '#ccc'
               ],
               'fill-extrusion-opacity': 0.6,
-              "fill-extrusion-height": ['get', "hoogte"]
+              "fill-extrusion-height": ["to-number", ['get', "hoogte"]]
           }
       });
     
@@ -54,7 +54,7 @@ map.on('styledata', function () {
     map.addSource('landschapselementen', {
 	  'type': 'vector',
 	  'tiles': [
-		'http://leda.geodan.nl:1500/landschapselementen_mvt/{z}/{x}/{y}'
+		'https://saturnus.geodan.nl/lasreg/landschapselementen_mvt/{z}/{x}/{y}'
 	  ],
 	  'minzoom': 8,
 	  'maxzoom': 14
@@ -84,7 +84,7 @@ map.on('styledata', function () {
                 'Bomengroep', 1,
                 'Bomenrij', 1,
                 'Houtwal', 1,
-                'Heg', ['get', 'hoogte'],
+                'Heg', ["to-number", ['get', "hoogte"]],
                 'Poel', 0,
                 /* other */ 0
             ]
@@ -97,22 +97,22 @@ map.on('click', 'bomen', function (e) {
     var prop = e.features[0].properties;
 	prop.hoogte = Math.round(prop.hoogte * 10) / 10;
 	prop.avg_height = Math.round(prop.avg_height * 10) / 10;
-    var htmlstring = '<h2>' + prop.elementtype + '</h2><p>Element id: ' + prop.elementid + 
-		'<br>Aantal bomen: ' + prop.aantalbomen + '<br>Gemiddelde hoogte: ' + prop.avg_height + 
-		' meter</p><p><h3>Boomgegevens:</h3> Boomregister id: ' + prop.tree_id + 
-		'<br>Hoogte: ' + prop.hoogte + ' meter</p>' +
-        '<a class="navbtn openbtn" style="" onclick="openNav(\'' + prop.elementtype + '\', \'' + prop.elementid + '\')">Toon geschiedenis</a>';
+    var htmlstring = '<h2>' + prop.elementtype + '</h2><p><b>Element id</b>: ' + prop.elementid + 
+		'<br><b>Aantal bomen</b>: ' + prop.aantalbomen + '<br><b>Gemiddelde hoogte</b>: ' + prop.avg_height + 
+		' meter</p><p><h3>Boomgegevens:</h3> <b>Boomregister id</b>: ' + prop.tree_id + 
+		'<br><b>Hoogte</b>: ' + prop.hoogte + ' meter</p>' +
+        '<button type="button" onclick="openNav(\'' + prop.elementtype + '\', \'' + prop.elementid + '\')">Toon meldingen</button>';
     new mapboxgl.Popup().setLngLat(e.lngLat).setHTML(htmlstring).addTo(map);
 });
 map.on('click', 'landschapselementen', function (e) {
     var prop = e.features[0].properties;
     console.log(prop);
 	prop.hoogte = Math.round(prop.hoogte * 10) / 10;
-    var htmlstring = '<h2>' + prop.elementtype + '</h2><p>Element id: ' + prop.elementid + 
-        '<br>Gemiddelde hoogte: ' + prop.hoogte + ' meter<br>Aantal bomen: ' + prop.aantalbomen +
-        '<br>Onderhoudsstatus: ' + prop.onderhoudsstatus + '<br>In onderzoek: ' + prop.inonderzoek +
-        '<br>Bronhouder: ' + prop.bronhouder + '</p>' +
-        '<a class="navbtn openbtn" style="" onclick="openNav(\'' + prop.elementtype + '\', \'' + prop.elementid + '\')">Toon geschiedenis</a>';
+    var htmlstring = '<h2>' + prop.elementtype + '</h2><p><b>Element id</b>: ' + prop.elementid + 
+        '<br><b>Gemiddelde hoogte</b>: ' + prop.hoogte + ' meter<br><b>Aantal bomen</b>: ' + prop.aantalbomen +
+        '<br><b>Onderhoudsstatus</b>: ' + prop.onderhoudsstatus + '<br><b>In onderzoek</b>: ' + prop.inonderzoek +
+        '<br><b>Bronhouder</b>: ' + prop.bronhouder + '</p>' +
+        '<button type="button" onclick="openNav(\'' + prop.elementtype + '\', \'' + prop.elementid + '\')">Toon meldingen</button>';
     new mapboxgl.Popup().setLngLat(e.lngLat).setHTML(htmlstring).addTo(map);
 });
 
@@ -126,4 +126,8 @@ for (var i = 0; i < inputs.length; i++) {
 function switchLayer(layer) {
 	map.setStyle('https://api.maptiler.com/maps/' + layer.target.id + '/style.json?key=DnTMUKM1IaBfW6AjV7bn');
 }
- 
+
+function otherLocation(loc) {
+    var coords = loc == "Achterhoek" ? [6.661585209069443, 51.91879773273479] : [5.998242, 53.212298];
+    map.flyTo({center: coords, essential: true});
+}

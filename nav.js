@@ -7,7 +7,7 @@ function openNav(elementtype, elementid) {
   document.getElementById("mySidenav").style.paddingLeft = "10px";
   document.getElementById("historyH").innerHTML = '<h2 style="padding: 0px; margin: 0px;">Geschiedenis van:</h2><h2 style="padding: 0px; margin: 0px;">' + 
   	elementtype + '</h2><I>' + elementid + '</I><br>';
-  fetch("http://leda.geodan.nl:1500/geschiedenis/" + elementid)
+  fetch("https://saturnus.geodan.nl/lasreg/geschiedenis/" + elementid)
 		.then(res => res.json()).then((data) => {
 			for(var i = 0; i < data.length; i++) {
 				var obj = data[i];
@@ -21,7 +21,7 @@ function openNav(elementtype, elementid) {
 }
 
 function maak_opmerking() {
-	fetch("http://leda.geodan.nl:1500/opmerking/" + current_elementid + '/' + document.getElementById("type_opm").value + '/' + 
+	fetch("https://saturnus.geodan.nl/lasreg/opmerking/" + current_elementid + '/' + document.getElementById("type_opm").value + '/' + 
 	document.getElementById("naam").value + '/' + document.getElementById("opmerking").value)
 		.then(res => res.json()).then((data) => {
 			document.getElementById("navbox").innerHTML = '';

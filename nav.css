@@ -26,8 +26,8 @@
 }
 
 .navbox {
-  height: 50%;
-  width:285px;
+  height: 60%;
+  width:95%;
   border:0px solid #ccc;
   font:14px/20px Georgia, Garamond, Serif;
   overflow:auto;
